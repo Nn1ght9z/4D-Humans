@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 This file contains the defition of the base Dataset class.
 """

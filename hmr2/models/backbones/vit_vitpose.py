@@ -1,3 +1,4 @@
+from __future__ import annotations
 # import mmcv
 # import mmpose
 # from mmpose.models import build_posenet

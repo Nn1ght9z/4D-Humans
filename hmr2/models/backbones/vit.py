@@ -1,3 +1,4 @@
+from __future__ import annotations
 # Copyright (c) OpenMMLab. All rights reserved.
 import math
 

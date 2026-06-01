@@ -1,3 +1,4 @@
+from __future__ import annotations
 from setuptools import setup, find_packages
 
 print('Found packages:', find_packages())
@@ -21,7 +22,7 @@ setup(
         'webdataset',
         'dill',
         'pandas',
-        'chumpy @ git+https://github.com/mattloper/chumpy',
+        'chumpy',
     ],
     extras_require={
         'all': [

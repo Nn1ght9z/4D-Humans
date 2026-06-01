@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 Render OpenPose keypoints.
 Code was ported to Python from the official C++ implementation https://github.com/CMU-Perceptual-Computing-Lab/openpose/blob/master/src/openpose/utilities/keypoint.cpp

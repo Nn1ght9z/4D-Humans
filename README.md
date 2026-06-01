@@ -1,104 +1,178 @@
-# 4DHumans: Reconstructing and Tracking Humans with Transformers
-Code repository for the paper:
-**Humans in 4D: Reconstructing and Tracking Humans with Transformers**
-[Shubham Goel](https://people.eecs.berkeley.edu/~shubham-goel/), [Georgios Pavlakos](https://geopavlakos.github.io/), [Jathushan Rajasegaran](http://people.eecs.berkeley.edu/~jathushan/), [Angjoo Kanazawa](https://people.eecs.berkeley.edu/~kanazawa/)<sup>\*</sup>, [Jitendra Malik](http://people.eecs.berkeley.edu/~malik/)<sup>\*</sup>
+# 4D-Humans + Frequency-Mamba: Monocular Video to Continuous Biomechanical Assessment
 
-[![arXiv](https://img.shields.io/badge/arXiv-2305.20091-00ff00.svg)](https://arxiv.org/pdf/2305.20091.pdf)  [![Website shields.io](https://img.shields.io/website-up-down-green-red/http/shields.io.svg)](https://shubham-goel.github.io/4dhumans/)     [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1Ex4gE5v1bPR3evfhtG7sDHxQGsWwNwby?usp=sharing)  [![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/brjathu/HMR2.0)
+[![arXiv](https://img.shields.io/badge/arXiv-2305.20091-00ff00.svg)](https://arxiv.org/pdf/2305.20091.pdf)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1Ex4gE5v1bPR3evfhtG7sDHxQGsWwNwby?usp=sharing)
 
+This repository extends the **[4D-Humans](https://github.com/shubham-goel/4D-Humans)** / **[HMR 2.0](https://arxiv.org/abs/2305.20091)** framework with a custom **Frequency-Mamba** pipeline for continuous biomechanical assessment from monocular video — targeting fatigue estimation, running kinematics analysis, and real-world sports motion understanding.
 
-![teaser](assets/teaser.png)
+> ⚠️ **Status**: Research exploration / engineering prototype. This project is **not** a peer-reviewed publication. It is the result of independent experimentation with pose estimation, State-Space Models (Mamba), and real-world sensor data. See [Limitations & Lessons](#limitations--lessons) for known issues.
 
-## Installation and Setup
-First, clone the repo. Then, we recommend creating a clean [conda](https://docs.conda.io/) environment, installing all dependencies, and finally activating the environment, as follows:
+---
+
+## What This Repository Adds (Beyond Upstream 4D-Humans)
+
+### Core Pipeline (custom)
+
+| File | Purpose |
+|------|---------|
+| [`pipeline.py`](pipeline.py) | **Frequency-Mamba** neural network: STFT frequency-domain features → Conv1d encoder → Mamba SSM → continuous TTE (Time-To-Exhaustion) regression. Core model definition. |
+| [`robust_pipeline_1hz.py`](robust_pipeline_1hz.py) | **Phase 2 production pipeline**: 1Hz video frame sampler → HMR2 3D joint extraction → sagittal-plane kinematic angle computation → HER (Heart-rate Estimated from kinematics proxy) curve → anomaly-aware smoothing → FrequencyMamba fatigue prediction. |
+| [`train_real.py`](train_real.py) | **Leave-One-Out Cross-Validation (LOOCV)** training harness for real collected data (`aligned_datasets_v26/`). Compares FrequencyMamba vs GRU vs LSTM baselines. |
+| [`verdict_plot.py`](verdict_plot.py) | Anatomical-baseline-aligned verdict plot generator: produces per-subject TTE vs HER degradation curves with drift-compensated baseline normalization. |
+| [`batch_process_v26.py`](batch_process_v26.py) | Batch processing script for v26 aligned tensor datasets. |
+| [`batch_fit_parser.py`](batch_fit_parser.py) | Batch fitting & result extraction for LOOCV outputs. |
+
+### Key Dependencies
+
+- **4D-Humans / HMR 2.0** — monocular 3D human mesh & pose estimation (ViTDet + SMPL)
+- **Mamba SSM** — selective state-space model (O(N) complexity, input-dependent gating)
+- **Detectron2** — object detection backbone for person detection
+
+---
+
+## Quick Start
+
+### Installation
+
 ```bash
-git clone https://github.com/shubham-goel/4D-Humans.git
+git clone https://github.com/Nn1ght9z/4D-Humans.git
 cd 4D-Humans
+
+# Option A: Conda (recommended)
 conda env create -f environment.yml
 conda activate 4D-humans
-```
 
-If conda is too slow, you can use pip:
-```bash
+# Option B: Pip
 conda create --name 4D-humans python=3.10
 conda activate 4D-humans
 pip install torch
 pip install -e .[all]
 ```
 
-All checkpoints and data will automatically be downloaded to `$HOME/.cache/4DHumans` the first time you run the demo code.
+### SMPL Model
 
-Besides these files, you also need to download the *SMPL* model. You will need the [neutral model](http://smplify.is.tue.mpg.de) for training and running the demo code. Please go to the corresponding website and register to get access to the downloads section. Download the model and place `basicModel_neutral_lbs_10_207_0_v1.0.0.pkl` in `./data/`.
+Download the [SMPL neutral model](http://smplify.is.tue.mpg.de) (`basicModel_neutral_lbs_10_207_0_v1.0.0.pkl`) and place it in `./data/`. Registration required on the SMPL website.
 
-## Run demo on images
-The following command will run ViTDet and HMR2.0 on all images in the specified `--img_folder`, and save renderings of the reconstructions in `--out_folder`. `--batch_size` batches the images together for faster processing. The `--side_view` flags additionally renders the side view of the reconstructed mesh, `--full_frame` renders all people together in front view, `--save_mesh` saves meshes as `.obj`s.
+### Run Upstream HMR2.0 Demo
+
 ```bash
+# Run on images
 python demo.py \
     --img_folder example_data/images \
     --out_folder demo_out \
     --batch_size=48 --side_view --save_mesh --full_frame
-```
 
-## Run tracking demo on videos
-Our tracker builds on PHALP, please install that first:
-```bash
-pip install git+https://github.com/brjathu/PHALP.git
-```
-
-Now, run `track.py` to reconstruct and track humans in any video. Input video source may be a video file, a folder of frames, or a youtube link:
-```bash
-# Run on video file
+# Run tracking on video
 python track.py video.source="example_data/videos/gymnasts.mp4"
-
-# Run on extracted frames
-python track.py video.source="/path/to/frames_folder/"
-
-# Run on a youtube link (depends on pytube working properly)
-python track.py video.source=\'"https://www.youtube.com/watch?v=xEH_5T9jMVU"\'
 ```
-The output directory (`./outputs` by default) will contain a video rendering of the tracklets and a `.pkl` file containing the tracklets with 3D pose and shape. Please see the [PHALP](https://github.com/brjathu/PHALP) repository for details.
 
-## Training
-Download the [training data](https://www.dropbox.com/sh/mjdwu59fxuhls5h/AACQ6FCGSrggUXmRzuubRHXIa) to `./hmr2_training_data/`, then start training using the following command:
-```
-bash fetch_training_data.sh
-python train.py exp_name=hmr2 data=mix_all experiment=hmr_vit_transformer trainer=gpu launcher=local
-```
-Checkpoints and logs will be saved to `./logs/`. We trained on 8 A100 GPUs for 7 days using PyTorch 1.13.1 and PyTorch-Lightning 1.8.1 with CUDA 11.6 on a Linux system. You may adjust batch size and number of GPUs per your convenience.
+### Run Frequency-Mamba Pipeline
 
-## Evaluation
-Download the [evaluation metadata](https://www.dropbox.com/scl/fi/kl79djemdgqcl6d691er7/hmr2_evaluation_data.tar.gz?rlkey=ttmbdu3x5etxwqqyzwk581zjl) to `./hmr2_evaluation_data/`. Additionally, download the Human3.6M, 3DPW, LSP-Extended, COCO, and PoseTrack dataset images and update the corresponding paths in  `hmr2/configs/datasets_eval.yaml`.
-
-Run evaluation on multiple datasets as follows, results are stored in `results/eval_regression.csv`. 
 ```bash
-python eval.py --dataset 'H36M-VAL-P2,3DPW-TEST,LSP-EXTENDED,POSETRACK-VAL,COCO-VAL' 
+# Phase 1: Train the model with LOOCV on aligned datasets
+python train_real.py
+
+# Phase 2: Run production pipeline at 1Hz on a video
+python robust_pipeline_1hz.py
 ```
 
-By default, our code uses the released checkpoint (mentioned as HMR2.0b in the paper). To use the HMR2.0a checkpoint, you may download and untar from [here](https://people.eecs.berkeley.edu/~jathushan/projects/4dhumans/hmr2a_model.tar.gz)
+---
 
-## Preprocess code
-To preprocess LSP Extended and Posetrack into metadata zip files for evaluation, see `hmr2/datasets/preprocess`.
+## Architecture Overview
 
-Training data preprocessing coming soon.
+```
+Video (monocular, any frame rate)
+  │
+  ▼
+[Pass A] HMR2.0 + ViTDet  ──→  SMPL 3D joints (per frame)
+  │
+  ▼
+[Pass B] Sagittal Kinematics  ──→  Knee angle θ(t), Hip angle φ(t)
+  │
+  ▼
+[Pass C] HER proxy (kinematic → physiological estimate)
+  │
+  ▼
+[Pass D] STFT sliding window (time→frequency domain)
+  │
+  ▼
+[Pass E] FrequencyMamba
+           ├── Conv1d projection (N_freq_bins → d_model)
+           ├── Mamba SSM blocks (×2)
+           └── MLP head → ŷ(TTE) ∈ [0,1]
+  │
+  ▼
+Output: Continuous fatigue curve + per-frame biomechanical features
+```
+
+---
+
+## Limitations & Lessons
+
+This project was developed as a hands-on exploration of monocular video-based biomechanical assessment. Several limitations were identified during development:
+
+- **Data**: Real-world data was self-collected under variable conditions with limited sample size and imperfect sensor synchronization (video + IMU).
+- **Benchmarks**: No established benchmark or mature baseline exists for continuous fatigue estimation from monocular video — making quantitative evaluation difficult.
+- **Pipeline integration**: HMR2 inference + Mamba sequence modeling are loosely coupled; end-to-end optimization or gradient flow between stages was not achieved.
+- **Scope**: Started without systematic literature review or clear problem definition, leading to engineering-heavy exploration with limited publishable scientific contributions.
+
+These issues reflect poor initial planning rather than fundamental flaws in the approach. The project served as valuable research training: understanding the importance of problem framing, dataset quality, baseline selection, and literature grounding **before** engineering begins.
+
+---
+
+## Project Structure
+
+```
+4D-Humans/
+├── hmr2/                    # HMR2.0 model (modified from upstream)
+│   ├── models/              # HMR2, SMPL wrapper, losses, discriminator
+│   ├── datasets/            # Data loaders, preprocessing
+│   ├── configs/             # Model & training configs
+│   └── utils/               # Geometry, rendering, misc utilities
+├── demo.py                  # Upstream image demo
+├── eval.py                  # Upstream evaluation
+├── track.py                 # Upstream video tracking (PHALP-based)
+├── train.py                 # Upstream training script
+├── pipeline.py              # FrequencyMamba model definition ★
+├── robust_pipeline_1hz.py   # Production pipeline @ 1Hz ★
+├── train_real.py            # LOOCV training harness ★
+├── verdict_plot.py          # Verdict plot generator ★
+├── batch_process_v26.py     # Batch processor ★
+├── batch_fit_parser.py      # Batch fit parser ★
+├── aligned_datasets_v26/    # v26 aligned tensor datasets
+├── fit_data/                # Fitting/calibration data
+├── imu_csv/                 # Raw IMU sensor CSV data
+└── environment.yml          # Conda environment
+```
+
+★ = custom additions beyond upstream 4D-Humans
+
+---
 
 ## Acknowledgements
-Parts of the code are taken or adapted from the following repos:
-- [ProHMR](https://github.com/nkolot/ProHMR)
-- [SPIN](https://github.com/nkolot/SPIN)
-- [SMPLify-X](https://github.com/vchoutas/smplify-x)
-- [HMR](https://github.com/akanazawa/hmr)
-- [ViTPose](https://github.com/ViTAE-Transformer/ViTPose)
-- [Detectron2](https://github.com/facebookresearch/detectron2)
 
-Additionally, we thank [StabilityAI](https://stability.ai/) for a generous compute grant that enabled this work.
+This repository is built on top of:
 
-## Citing
-If you find this code useful for your research, please consider citing the following paper:
+- **[4D-Humans](https://github.com/shubham-goel/4D-Humans)** / **[HMR 2.0](https://arxiv.org/abs/2305.20091)** — Shubham Goel, Georgios Pavlakos, Jathushan Rajasegaran, Angjoo Kanazawa, Jitendra Malik
+- [ProHMR](https://github.com/nkolot/ProHMR), [SPIN](https://github.com/nkolot/SPIN), [SMPLify-X](https://github.com/vchoutas/smplify-x), [HMR](https://github.com/akanazawa/hmr)
+- [ViTPose](https://github.com/ViTAE-Transformer/ViTPose), [Detectron2](https://github.com/facebookresearch/detectron2)
+- [Mamba](https://github.com/state-spaces/mamba) — Selective State Space Models
+
+Thanks to [StabilityAI](https://stability.ai/) for the compute grant that enabled the original 4D-Humans work.
+
+## Citing Original 4D-Humans
+
+If you use the upstream HMR2.0 code, please cite:
 
 ```bibtex
 @inproceedings{goel2023humans,
     title={Humans in 4{D}: Reconstructing and Tracking Humans with Transformers},
     author={Goel, Shubham and Pavlakos, Georgios and Rajasegaran, Jathushan and Kanazawa, Angjoo and Malik, Jitendra},
-    booktitle={ICCV},
+    booktitle={CVPR},
     year={2023}
 }
 ```
+
+## License
+
+This repository inherits the [MIT License](LICENSE.md) from the upstream 4D-Humans project. All custom additions (*.py files at the repository root, excluding upstream-modified files) are also MIT-licensed.

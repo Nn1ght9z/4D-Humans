@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 Code adapted from: https://github.com/akanazawa/hmr/blob/master/src/benchmark/eval_util.py
 """

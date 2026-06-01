@@ -1,3 +1,4 @@
+from __future__ import annotations
 import torch
 import pytorch_lightning as pl
 from typing import Any, Dict, Mapping, Tuple

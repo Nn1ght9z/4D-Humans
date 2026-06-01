@@ -1,3 +1,4 @@
+from __future__ import annotations
 # Adapted from https://raw.githubusercontent.com/nkolot/SPIN/master/datasets/preprocess/hr_lspet.py
 import os
 import glob

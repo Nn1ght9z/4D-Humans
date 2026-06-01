@@ -1,3 +1,4 @@
+from __future__ import annotations
 import detectron2.data.transforms as T
 import torch
 from detectron2.checkpoint import DetectionCheckpointer

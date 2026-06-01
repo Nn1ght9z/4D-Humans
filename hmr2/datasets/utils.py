@@ -1,3 +1,5 @@
+from __future__ import annotations
+from __future__ import annotations
 """
 Parts of the code are taken or adapted from
 https://github.com/mkocabas/EpipolarPose/blob/master/lib/utils/img_utils.py

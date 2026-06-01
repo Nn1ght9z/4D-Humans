@@ -1,3 +1,4 @@
+from __future__ import annotations
 from .vit import vit
 
 def create_backbone(cfg):

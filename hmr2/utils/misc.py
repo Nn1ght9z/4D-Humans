@@ -1,3 +1,4 @@
+from __future__ import annotations
 import time
 import warnings
 from importlib.util import find_spec

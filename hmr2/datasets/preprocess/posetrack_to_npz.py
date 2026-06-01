@@ -1,3 +1,4 @@
+from __future__ import annotations
 # Adapted from https://raw.githubusercontent.com/nkolot/SPIN/master/datasets/preprocess/coco.py
 import os
 from os.path import join

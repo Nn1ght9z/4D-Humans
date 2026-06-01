@@ -1,0 +1,10 @@
+{
+    "files.watcherExclude": {
+        "**/1.mp4/**": true,
+        "**//root/4D-Humans/**": true
+    },
+    "search.exclude": {
+        "**/1.mp4/**": true,
+        "**//root/4D-Humans/**": true
+    }
+}

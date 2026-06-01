@@ -1,3 +1,4 @@
+from __future__ import annotations
 from inspect import isfunction
 from typing import Callable, Optional
 

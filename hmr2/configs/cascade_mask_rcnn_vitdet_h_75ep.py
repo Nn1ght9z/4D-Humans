@@ -1,3 +1,4 @@
+from __future__ import annotations
 ## coco_loader_lsj.py
 
 import detectron2.data.transforms as T

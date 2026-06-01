@@ -1,0 +1,10 @@
+datasets/
+checkpoints/
+logs/
+wandb/
+*.pth
+*.pt
+*.jpg
+*.png
+*.mp4
+__pycache__/
