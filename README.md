@@ -56,14 +56,14 @@ Download the [SMPL neutral model](http://smplify.is.tue.mpg.de) (`basicModel_neu
 ### Run Upstream HMR2.0 Demo
 
 ```bash
-# Run on images
+# Run on images (replace with your image folder)
 python demo.py \
-    --img_folder example_data/images \
+    --img_folder /path/to/your/images \
     --out_folder demo_out \
     --batch_size=48 --side_view --save_mesh --full_frame
 
 # Run tracking on video
-python track.py video.source="example_data/videos/gymnasts.mp4"
+python track.py video.source="/path/to/your/video.mp4"
 ```
 
 ### Run Frequency-Mamba Pipeline

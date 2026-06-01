@@ -152,3 +152,9 @@ dmypy.json
 
 # Generated pipeline outputs
 /pipeline_outputs/
+
+# Python cache (legacy cleanup)
+/__pycache__/
+/.ipynb_checkpoints/
+/kinematic_cache/
+/hmr2.egg-info/
